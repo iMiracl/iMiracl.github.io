@@ -1,0 +1,279 @@
+
+
+(function($) {
+
+ // код, который работает со старой версией
+
+var video_player = [];
+
+function pageInit() {
+    menuSelected = 3;
+    if (video_player[0]) {
+        loadPlayer(video_player[0][0], video_player[0][1], video_player[0][2], video_player[0][3])
+    }
+}
+var browser_detect = {
+    IE: !!(window.attachEvent && !window.opera),
+    Opera: !!window.opera,
+    WebKit: navigator.userAgent.indexOf("AppleWebKit/") > -1,
+    Gecko: navigator.userAgent.indexOf("Gecko") > -1 && navigator.userAgent.indexOf("KHTML") == -1,
+    MobileSafari: !!navigator.userAgent.match(/Apple.*Mobile.*Safari/)
+};
+var mobileSafari = browser_detect.MobileSafari;
+var upAnimate = false;
+var anim_time;
+if ($.browser.msie) {
+    anim_time = 0
+} else {
+    anim_time = 500
+}
+var anim_time_short = (anim_time == 0) ? 0 : 350;
+var scroll_animate = false;
+var menuSelected = false;
+var domStart = new Date();
+
+function culculateDomRedy(a) {
+    domStop = new Date();
+    loadTime = (domStop.getTime() - domStart.getTime());
+    if (console) {
+        logStr = (a) ? a + " " : "";
+        logStr += (loadTime < 1000) ? "cache =>" : "full refresh =>";
+        console.log((logStr + loadTime))
+    }
+}
+var rocketFireTimer = false;
+var rocketFireState = [0, 0, 0, 1];
+var rocketFireFrameLength = 100;
+var rocketFireFrameStart = 312;
+var rocketFireAnimateTime = 100;
+var toLeftFireAnimation = false;
+
+function rocketFireAnimate() {
+    for (i = 0; i < rocketFireState.length; i++) {
+        if (rocketFireState[i] == 1) {
+            rocketFireState[i] = 0;
+            if (!toLeftFireAnimation) {
+                if ((i + 2) < rocketFireState.length) {
+                    rocketFireState[i + 1] = 1
+                } else {
+                    rocketFireState[0] = 1;
+                    toLeftFireAnimation = true
+                }
+            } else {
+                if ((i - 1) < 0) {
+                    rocketFireState[1] = 1
+                } else {
+                    rocketFireState[i - 1] = 1;
+                    toLeftFireAnimation = false
+                }
+            }
+            break
+        }
+    }
+    $("#MrScrollUp .MrScrollUp1").css({
+        "background-position": "-" + (rocketFireFrameStart + (i * rocketFireFrameLength)) + "px 0px",
+        display: "block"
+    });
+    rocketFireTimer = setTimeout("rocketFireAnimate()", rocketFireAnimateTime)
+}
+
+function initScrollTop() {
+    if (!mobileSafari) {
+        $("#MrScrollUp div.MrScrollUp2").hover(function() {
+            if ($.browser.msie) {
+                this.parentNode.children[0].style.display = "block"
+            } else {
+                $(this.parentNode.children[0]).stop().fadeTo(500, 1)
+            }
+        }, function() {
+            if (upAnimate || scroll_animate) {
+                return
+            }
+            if ($.browser.msie) {
+                this.parentNode.children[0].style.display = "none"
+            } else {
+                $(this.parentNode.children[0]).stop().fadeTo(500, 0)
+            }
+        });
+        $("#MrScrollUp div.MrScrollUp2").click(function() {
+           // sound
+           soundRocket = function() {
+             var audio = new Audio();
+             audio.src = '/home/sounds/r2.mp3';
+             audio.volume = 0.8;
+             audio.play();
+          }
+          soundRocket();
+          // sound end
+            scroll_animate = true;
+            $("#MrScrollUp .MrScrollUp1").css({
+                "background-position": "-312px 0",
+                display: "block"
+            });
+            op = $.browser.opera ? $("html") : $("html, body");
+            rocketFireTimer = setTimeout("rocketFireAnimate()", rocketFireAnimateTime);
+            op.animate({
+                scrollTop: 0
+            }, "slow", function() {
+                scroll_animate = false;
+                if (!upAnimate) {
+                    upAnimate = true;
+                    thisTop = $("#MrScrollUp")[0].offsetTop + 550;
+                    $("#MrScrollUp").animate({
+                        "margin-top": "-=" + thisTop + "px"
+                    }, 700, function() {
+                        resetScrollUpBtn()
+                    })
+                }
+            })
+        });
+        window.onscroll = function() {
+            if ((!scroll_animate) && (!upAnimate)) {
+                body_elem = $("body")[0];
+                window_elem = $("html")[0];
+                if (window.innerHeight) {
+                    wind_height = window.innerHeight;
+                    wind_scroll = window.scrollY
+                } else {
+                    wind_height = document.documentElement.clientHeight;
+                    wind_scroll = getScrollY()
+                }
+                elem = $("#MrScrollUp")[0];
+                scrollBtn = $("#MrScrollUp")[0];
+                if ((elem) && (scrollBtn)) {
+                    if ((scrollBtn.style.display == "none") && ((wind_height * 0.5) < wind_scroll)) {
+                        scroll_animate = true;
+                        $("#MrScrollUp").fadeIn(anim_time, function() {
+                            scroll_animate = false;
+                            this.style.display = "block"
+                        })
+                    }
+                    if ((scrollBtn.style.display == "block") && ((wind_height * 0.5) > wind_scroll)) {
+                        scroll_animate = true;
+                        $("#MrScrollUp").fadeOut(anim_time, function() {
+                            scroll_animate = false;
+                            this.style.display = "none"
+                        })
+                    }
+                }
+            }
+        }
+    } else {
+        setTimeout(function() {
+            window.scrollTo(0, 1)
+        }, 100)
+    }
+}
+
+function resetScrollUpBtn() {
+    $("#MrScrollUp .MrScrollUp1").css({
+        "background-position": "-104px 0px",
+        display: "none"
+    });
+    $("#MrScrollUp").css({
+        "margin-top": "-100px",
+        display: "none"
+    });
+    upAnimate = false;
+    clearTimeout(rocketFireTimer)
+}
+
+function load_on_load() {
+    pageInit();
+    menuSelected = (menuSelected) ? menuSelected : 0;
+    initScrollTop()
+}
+$(document).ready(function() {
+    load_on_load()
+});
+
+
+})(jQuery);
+
+
+ // wrap pay
+ function show_pay(state){
+ document.getElementById('pay').style.display = state;
+ document.getElementById('pay_wrap').style.display = state;
+ // sound page
+ soundOptions = function() {
+     var audio = new Audio();
+     audio.src = '/home/sounds/pay2.mp3';
+     audio.volume = 0.2;
+     audio.play();
+ }
+ soundOptions();
+ }
+
+ // matrix
+ jQuery(document).ready(function() {
+    var audio = new Audio();
+    audio.src = '/home/sounds/matrix2.mp3';
+    audio.volume = 0.8;
+     jQuery(".matrixbtn").hover(function() {
+        audio.play();
+         jQuery(".matrix").stop().animate({
+             opacity: 0.95
+         }, 800);
+         jQuery(".large-header").stop().animate({
+             opacity: 0
+         }, 5000);
+     }, function() {
+      audio.pause();
+         jQuery(".matrix").stop().animate({
+             opacity: 0
+         }, 800);
+         jQuery(".large-header").stop().animate({
+             opacity: 1
+         }, 3000);
+     });
+ });
+
+ // Analizer
+//���������� onsubmit �����
+formSubmit = function (obj)
+{
+    var formData = new FormData (document.getElementById ('formsubmit'));
+	$.ajax({
+		url : '/tools/core/roboscan.php',
+		type : 'POST',
+		data : formData,
+		processData: false,
+		contentType: false,
+		success : function (data) {
+		    $(".resp_parser").hide();
+			$("#results").html(data);
+			$('#limit_num').load('/parser/parser_num.php');
+		},
+		beforeSend: function () {
+		        $(".resp_parser").show();
+	            $('#results').html ('');
+	        }
+	});
+ document.getElementById ('formsubmit').reset ();
+	return false;
+}
+
+ // nav sounds
+ $(".nav_button").click(function() {
+     soundNav = function() {
+         var audio = new Audio();
+         audio.src = '/home/sounds/do.mp3';
+         audio.volume = 0.5;
+         audio.play();
+     }
+     soundNav();
+ });
+
+ // wrap success
+ function show_success(state) {
+     document.getElementById('success-order').style.display = state;
+     document.getElementById('success_wrap').style.display = state;
+     soundSuccess = function() {
+         var audio = new Audio();
+         audio.src = '/home/sounds/pay2.mp3';
+         audio.volume = 0.2;
+         audio.play();
+     }
+     soundSuccess();
+ }
